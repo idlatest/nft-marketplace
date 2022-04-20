@@ -60,16 +60,15 @@ export default function Example() {
               </div>
               <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex-shrink-0 flex items-center">
-                  <img
-                    className="block lg:hidden h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg"
-                    alt="Workflow"
-                  />
-                  <img
-                    className="hidden lg:block h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/workflow-logo-indigo-500-mark-white-text.svg"
-                    alt="Workflow"
-                  />
+                  <Link href="/" passHref>
+                    <a>
+                      <img
+                        className="h-8 w-auto"
+                        src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg"
+                        alt="Workflow"
+                      />
+                    </a>
+                  </Link>
                 </div>
                 <div className="hidden sm:block sm:ml-6">
                   <div className="flex space-x-4">
@@ -99,9 +98,12 @@ export default function Example() {
                   <button onClick={connectWallet} className="bg-indigo-500 px-3 py-1 rounded-full text-white font-semibold">Connect</button>
                 ) : (
                   <div className="flex items-center">
-                    <span className="font-medium mr-6 text-sm text-white">{balance} SB</span>
-                    <span className="flex items-center text-white px-3 py-1 bg-gray-700 rounded-md">{truncateAddress(currentAccount)}
-                      <canvas ref={canvasRef} className="ml-1" />
+                    <span className="font-medium mr-3 md:mr-6 text-sm text-white">{balance} SB</span>
+                    <span className="flex items-center text-white px-1 md:px-3 py-1 bg-gray-700 rounded-md">
+                      <span className="hidden md:inline">
+                        {truncateAddress(currentAccount)}
+                      </span>
+                      <canvas ref={canvasRef} className="md:ml-1" />
                     </span>
                   </div>
                 )}

@@ -114,13 +114,13 @@ export default function Home() {
 
           {!currentAccount ? (
             <button
-              className='text-2xl font-bold py-3 px-12 bg-black shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out'
+              className='text-2xl font-bold py-3 px-12 bg-black shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white'
               onClick={connectWallet}
             >
               Connect Wallet
             </button>
           ) : correctNetwork ? (
-            <button className='text-2xl font-bold py-3 px-12 bg-black shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out' onClick={mint}>
+            <button className='text-2xl font-bold py-3 px-12 bg-black shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white' onClick={mint}>
               Mint NFT
             </button>
           ) : (
