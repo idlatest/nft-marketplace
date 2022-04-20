@@ -35,17 +35,12 @@ export default function Collections() {
     exchangeABI,
     exchangeAddress,
     getProvider,
+    getContract
   } = useAppContext();
 
   const web3 = getProvider();
 
   const aux = new Aux(web3);
-
-  const getContract = (contractAddress, contractABI) => {
-    const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-    return contract
-  }
 
   const parseURI = (URI) => {
     const parsedURI = URI.startsWith("ipfs://") ? `https://ipfs.io/ipfs/${URI.substring(7)}` : URI;

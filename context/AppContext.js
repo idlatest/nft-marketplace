@@ -1,13 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import Web3 from 'web3';
-import {
-  exchangeABI,
-  exchangeAddress,
-  nftContractABI,
-  nftContractAddress,
-  tokenABI,
-  tokenAddress
-} from '../utils/constants';
+import { tokenABI, tokenAddress } from '../utils/constants';
 
 const AppContext = createContext();
 
@@ -20,6 +13,13 @@ if (typeof window !== 'undefined') {
 export function AppWrapper({ children }) {
   const [currentAccount, setCurrentAccount] = useState("");
   const [correctNetwork, setCorrectNetwork] = useState(false)
+  const [balance, setBalance] = useState(0)
+
+  const getProvider = () => {
+    let web3 = new Web3(ethereum);
+
+    return web3;
+  }
 
   const checkIfWalletIsConnected = async () => {
     if (!ethereum) return alert("Please install metamask");
@@ -83,24 +83,36 @@ export function AppWrapper({ children }) {
     }
   }
 
-  const getProvider = () => {
-    let web3 = new Web3(ethereum);
-    web3 = web3.extend({
-      methods: [{
-        name: 'signTypedData',
-        call: 'eth_signTypedData',
-        params: 2,
-        inputFormatter: [web3.extend.formatters.inputAddressFormatter, null]
-      }]
-    });
+  const getContract = (contractAddress, contractABI) => {
+    const web3 = getProvider();
+    const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-    return web3;
+    return contract
   }
 
   useEffect(() => {
     checkIfWalletIsConnected();
     checkCorrectNetwork();
-  })
+
+    const getTokenBalance = async () => {
+      const token = getContract(tokenAddress, tokenABI);
+
+      try {
+        const balance = await token.methods.balanceOf(currentAccount).call();
+        const decimals = await token.methods.decimals().call();
+
+        console.log("balance", balance.div(2))
+        console.log("decimals", decimals)
+
+
+
+        setBalance(balance);
+
+      } catch (error) { }
+    }
+
+    getTokenBalance();
+  }, [])
 
   return (
     <AppContext.Provider
@@ -108,11 +120,9 @@ export function AppWrapper({ children }) {
         currentAccount,
         connectWallet,
         correctNetwork,
-        nftContractAddress,
-        nftContractABI,
-        exchangeABI,
-        exchangeAddress,
         getProvider,
+        balance,
+        getContract
       }}
     >
       {children}
