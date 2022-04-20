@@ -4,6 +4,7 @@ import { TailSpin } from 'react-loader-spinner';
 import { Dialog, Transition } from '@headlessui/react';
 import { XIcon } from '@heroicons/react/outline';
 import Moralis from 'moralis';
+import iziToast from 'izitoast';
 import { useAppContext } from '../context/AppContext';
 import {
   nftContractABI,
@@ -15,6 +16,7 @@ import {
 } from '../utils/constants';
 import Aux from '../utils/Aux';
 import { eip712Domain } from '../utils/eip712';
+import BigNumber from 'bignumber.js';
 
 Moralis.start({
   serverUrl: process.env.NEXT_PUBLIC_MORALIS_SERVER_URL,
@@ -34,6 +36,7 @@ export default function Collections() {
     exchangeABI,
     exchangeAddress,
     getProvider,
+    balance,
   } = useAppContext();
 
   const web3 = getProvider();
@@ -48,6 +51,10 @@ export default function Collections() {
 
   const submit = async (e) => {
     e.preventDefault()
+
+    if (new BigNumber(selectedOrder.attributes.price).isGreaterThan(balance)) {
+      return iziToast.error({ message: "Insufficient balance" })
+    }
 
     const exchange = getContract(exchangeAddress, exchangeABI);
     const registry = getContract(registryAddress, registryABI);

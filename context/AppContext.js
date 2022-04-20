@@ -96,7 +96,6 @@ export function AppWrapper({ children }) {
     checkCorrectNetwork();
 
     const getTokenBalance = async () => {
-      const web3 = getProvider();
       const token = getContract(tokenAddress, tokenABI);
 
       try {

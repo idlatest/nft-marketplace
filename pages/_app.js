@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import 'izitoast/dist/css/iziToast.min.css'
 import { AppWrapper } from '../context/AppContext'
 import Header from '../components/Header';
 
