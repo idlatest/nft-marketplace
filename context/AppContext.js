@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import Web3 from 'web3';
+import BigNumber from "bignumber.js";
 import { tokenABI, tokenAddress } from '../utils/constants';
 
 const AppContext = createContext();
@@ -83,36 +84,31 @@ export function AppWrapper({ children }) {
     }
   }
 
-  const getContract = (contractAddress, contractABI) => {
+  const getContract = useCallback((contractAddress, contractABI) => {
     const web3 = getProvider();
     const contract = new web3.eth.Contract(contractABI, contractAddress);
 
     return contract
-  }
+  }, [])
 
   useEffect(() => {
     checkIfWalletIsConnected();
     checkCorrectNetwork();
 
     const getTokenBalance = async () => {
+      const web3 = getProvider();
       const token = getContract(tokenAddress, tokenABI);
 
       try {
         const balance = await token.methods.balanceOf(currentAccount).call();
         const decimals = await token.methods.decimals().call();
 
-        console.log("balance", balance.div(2))
-        console.log("decimals", decimals)
-
-
-
-        setBalance(balance);
-
+        setBalance(new BigNumber(balance).div(10 ** decimals).toFixed(2));
       } catch (error) { }
     }
 
     getTokenBalance();
-  }, [])
+  }, [currentAccount, getContract])
 
   return (
     <AppContext.Provider
