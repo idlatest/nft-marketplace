@@ -1,10 +1,10 @@
 import { useEffect, useState, Fragment } from 'react';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import { TailSpin } from 'react-loader-spinner';
 import { Dialog, Transition } from '@headlessui/react';
 import { XIcon } from '@heroicons/react/outline';
 import Moralis from 'moralis';
-import iziToast from 'izitoast';
 import { useAppContext } from '../context/AppContext';
 import {
   nftContractABI,
@@ -12,11 +12,22 @@ import {
   registryAddress,
   staticAddress,
   tokenABI,
-  tokenAddress
+  tokenAddress,
+  exchangeAddress,
+  nftContractAddress,
+  exchangeABI
 } from '../utils/constants';
 import Aux from '../utils/Aux';
 import { eip712Domain } from '../utils/eip712';
 import BigNumber from 'bignumber.js';
+
+let iziToast;
+if (typeof window !== 'undefined') {
+  import('izitoast').then(module => {
+    iziToast = module;
+  });
+}
+
 
 Moralis.start({
   serverUrl: process.env.NEXT_PUBLIC_MORALIS_SERVER_URL,
@@ -32,11 +43,9 @@ export default function Collections() {
 
   const {
     currentAccount,
-    nftContractAddress,
-    exchangeABI,
-    exchangeAddress,
     getProvider,
     balance,
+    connectWallet
   } = useAppContext();
 
   const web3 = getProvider();
@@ -52,10 +61,6 @@ export default function Collections() {
   const submit = async (e) => {
     e.preventDefault()
 
-    if (new BigNumber(selectedOrder.attributes.price).isGreaterThan(balance)) {
-      return iziToast.error({ message: "Insufficient balance" })
-    }
-
     const exchange = getContract(exchangeAddress, exchangeABI);
     const registry = getContract(registryAddress, registryABI);
     const nft = getContract(nftContractAddress, nftContractABI);
@@ -64,6 +69,14 @@ export default function Collections() {
     const gasLimit = 285000;
 
     try {
+      if (!currentAccount) {
+        await connectWallet()
+      }
+
+      if (new BigNumber(selectedOrder.attributes.price).isGreaterThan(balance)) {
+        return iziToast.error({ message: "Insufficient balance" })
+      }
+
       // Register user account on proxy
       // allow proxy to carry out tx for user
       await registry.methods.registerProxy().send({
@@ -213,6 +226,7 @@ export default function Collections() {
       })
     } catch (error) {
       console.log("error", error);
+      return iziToast.error({ message: error.message })
     } finally {
       setModalOpen(false);
     }

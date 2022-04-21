@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link'
 import { useRouter } from 'next/router';
 import { Disclosure } from '@headlessui/react'
-import { MenuIcon, XIcon } from '@heroicons/react/outline'
+import { MenuIcon, XIcon, ExclamationCircleIcon } from '@heroicons/react/outline'
 import { renderIcon } from '@download/blockies';
 import { useAppContext } from '../context/AppContext'
 
@@ -18,7 +18,7 @@ function classNames(...classes) {
 
 export default function Example() {
   const canvasRef = useRef(null);
-  const { currentAccount, connectWallet, balance } = useAppContext();
+  const { currentAccount, connectWallet, correctNetwork, balance } = useAppContext();
   const router = useRouter();
 
   const truncateAddress = (address) => {
@@ -110,6 +110,11 @@ export default function Example() {
               </div>
             </div>
           </div >
+
+          {!correctNetwork && (
+            <div className="px-3 py-1 bg-orange-500 text-slate-800 text-center flex justify-center items-center">
+              <ExclamationCircleIcon className="block h-6 w-6 mr-2" aria-hidden="true" /> We are only supporting <span className="font-medium mx-1">Rinkeby</span> testnet!</div>
+          )}
 
           <Disclosure.Panel className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
