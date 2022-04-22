@@ -2,9 +2,9 @@ import { useState } from 'react';
 import Head from 'next/head';
 import Image from "next/image";
 import { TailSpin } from 'react-loader-spinner';
-import { ethers } from 'ethers';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
+import { nftContractABI, nftContractAddress } from '../utils/constants';
 
 export default function Home() {
   const [mintedNFT, setMintedNFT] = useState(null)
@@ -12,20 +12,11 @@ export default function Home() {
   const [txError, setTxError] = useState(null)
   const {
     currentAccount,
-    nftContractAddress,
-    nftContractABI,
     correctNetwork,
     connectWallet,
-    getProvider,
+    getContract,
+    getProvider
   } = useAppContext();
-
-  const getNftContract = () => {
-    const provider = getProvider();
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(nftContractAddress, nftContractABI, signer);
-
-    return contract
-  }
 
   const imageLoader = ({ src }) => {
     return src
@@ -39,8 +30,8 @@ export default function Home() {
 
   const getMintedNFT = async (tokenId) => {
     try {
-      const nft = getNftContract();
-      const tokenUri = await nft.tokenURI(tokenId);
+      const nft = getContract(nftContractAddress, nftContractABI);
+      const tokenUri = await nft.methods.tokenURI(tokenId).call();
       const parsedTokenURI = parseURI(tokenUri)
       const response = await axios.get(parsedTokenURI);
       const meta = response.data;
@@ -56,25 +47,24 @@ export default function Home() {
   }
 
   const mint = async () => {
+    const gasLimit = 285000;
+
     try {
-      const nft = getNftContract();
-      const nftTx = await nft.mint(1, {
-        gasLimit: 25000
+      const nft = getContract(nftContractAddress, nftContractABI);
+      const nftTx = await nft.methods.mint(1).send({
+        gasLimit,
+        from: currentAccount,
       });
 
-      console.log("Minting...", nftTx.hash);
+      console.log("Minting...", nftTx.transactionHash);
       setLoading(true);
 
-      const tx = await nftTx.wait();
+      const tokenId = getProvider().utils.hexToNumber(nftTx.events.Transfer.raw.topics[3]);
 
-      console.log("Mined!", tx);
-
-      const event = tx.events[0];
-      const value = event.args[2];
-      const tokenId = value.toNumber();
+      console.log("token ID", tokenId);
 
       console.log(
-        `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTx.hash}`
+        `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTx.transactionHash}`
       )
 
       getMintedNFT(tokenId);
@@ -114,13 +104,13 @@ export default function Home() {
 
           {!currentAccount ? (
             <button
-              className='text-2xl font-bold py-3 px-12 bg-black shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white'
+              className='text-2xl font-bold py-3 px-12 bg-indigo-500 shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white'
               onClick={connectWallet}
             >
               Connect Wallet
             </button>
           ) : correctNetwork ? (
-            <button className='text-2xl font-bold py-3 px-12 bg-black shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white' onClick={mint}>
+            <button className='text-2xl font-bold py-3 px-12 bg-indigo-500 shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white' disabled={loading} onClick={mint}>
               Mint NFT
             </button>
           ) : (
@@ -132,7 +122,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className='text-xl font-semibold mb-20 mt-4'>
+          <div className='text-xl font-semibold my-4'>
             <a
               href={`https://rinkeby.rarible.com/collection/${nftContractAddress}`}
               target='_blank'
@@ -162,10 +152,7 @@ export default function Home() {
             ) : mintedNFT === null ? (
               <div></div>
             ) : (
-              <div className='flex flex-col justify-center items-center'>
-                <div className='font-semibold text-lg text-center mb-4'>
-                  Your Eternal Domain Character
-                </div>
+              <div className='flex flex-col justify-center items-center py-4'>
                 <Image
                   loader={imageLoader}
                   unoptimized={true}

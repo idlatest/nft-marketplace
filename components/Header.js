@@ -7,9 +7,9 @@ import { renderIcon } from '@download/blockies';
 import { useAppContext } from '../context/AppContext'
 
 const navigation = [
-  { name: 'Explore', href: '/explore', current: true },
+  { name: 'Mint NFT', href: '/', current: true },
+  { name: 'Explore', href: '/explore', current: false },
   { name: 'Collections', href: '/collections', current: false },
-  { name: 'Transactions', href: '/transactions', current: false }
 ]
 
 function classNames(...classes) {
