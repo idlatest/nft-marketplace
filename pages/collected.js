@@ -213,9 +213,11 @@ export default function Collections() {
 
           const NFTArr = [];
 
-          AccountNfts.result.forEach(async (NFT, index) => {
+          for (let index = 0; index < AccountNfts.result.length; index++) {
+            const NFT = AccountNfts.result[index];
             const parsedMetadata = JSON.parse(NFT.metadata);
             const NFTObj = {};
+
             NFTObj.tokenId = NFT.token_id;
             NFTObj.name = NFT.name;
             NFTObj.amount = NFT.amount;
@@ -242,7 +244,7 @@ export default function Collections() {
             }
 
             NFTArr.push(NFTObj);
-          });
+          }
 
           setAccountNFTs(NFTArr);
         } catch (error) {
