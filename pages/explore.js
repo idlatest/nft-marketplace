@@ -65,10 +65,8 @@ export default function Collections() {
 
     const decimals = await token.methods.decimals().call();
 
-    const gasLimit = 285000;
+    const gasLimit = 796197;
     const formattedPrice = new BigNumber(selectedOrder.attributes.price).times(new BigNumber(10).pow(decimals));
-
-    console.log("price", formattedPrice);
 
     try {
       setLoadingOrderPurchasing(true);
@@ -101,7 +99,7 @@ export default function Collections() {
       console.log("proxy", proxy);
 
       // set approval on nft contract to allow the proxy to make transaction on behalf of the owner
-      await token.methods.approve(proxy, formattedPrice).send({
+      await token.methods.approve(proxy, formattedPrice.toString()).send({
         from: currentAccount,
         gasLimit
       });
@@ -181,7 +179,7 @@ export default function Collections() {
         const firstData = nft.methods.transferFrom(order.maker, counterOrder.maker, selectedOrder.attributes.metadata.tokenId).encodeABI();
         console.log("firstData", firstData);
 
-        const secondData = token.methods.transferFrom(counterOrder.maker, order.maker, formattedPrice).encodeABI();
+        const secondData = token.methods.transferFrom(counterOrder.maker, order.maker, formattedPrice.toString()).encodeABI();
         console.log("secondData", secondData);
 
         const firstCall = { target: nftContractAddress, howToCall: 0, data: firstData };

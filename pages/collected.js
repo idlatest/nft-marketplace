@@ -73,7 +73,7 @@ export default function Collections() {
   const submit = async (e) => {
     e.preventDefault()
 
-    const gasLimit = 285000;
+    const gasLimit = 796197;
 
     try {
       setLoadingOrderListing(true);
