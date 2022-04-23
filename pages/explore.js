@@ -28,7 +28,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-
 Moralis.start({
   serverUrl: process.env.NEXT_PUBLIC_MORALIS_SERVER_URL,
   appId: process.env.NEXT_PUBLIC_MORALIS_APP_ID
@@ -77,12 +76,18 @@ export default function Collections() {
         return iziToast.error({ message: "Insufficient balance" })
       }
 
-      // Register user account on proxy
-      // allow proxy to carry out tx for user
-      await registry.methods.registerProxy().send({
-        from: currentAccount,
-        gasLimit
+      const proxyCheck = await registry.methods.proxies(currentAccount).call({
+        from: currentAccount
       });
+
+      if (new BigNumber(proxyCheck).isZero()) {
+        // Register user account on proxy
+        // allow proxy to carry out tx for user
+        await registry.methods.registerProxy().send({
+          from: currentAccount,
+          gasLimit
+        });
+      }
 
       const proxy = await registry.methods.proxies(currentAccount).call({
         from: currentAccount
@@ -222,7 +227,15 @@ export default function Collections() {
             gasLimit,
           });
 
-        console.log("the end", res);
+        selectedOrder.set("cancelledOrFinalized", true);
+
+        await selectedOrder.save();
+
+        setOrders(
+          orders.filter(orderState => orderState.id != selectedOrder.id)
+        )
+
+        iziToast.success({ message: "Item bought successfully" })
       })
     } catch (error) {
       console.log("error", error);
@@ -239,6 +252,8 @@ export default function Collections() {
       try {
         const OrderObj = Moralis.Object.extend("Order");
         const query = new Moralis.Query(OrderObj);
+
+        query.equalTo("cancelledOrFinalized", false);
 
         const results = await query.find();
 
@@ -263,51 +278,63 @@ export default function Collections() {
 
       <main className="bg-white">
         <div className="max-w-2xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8">
-          <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">Explore</h2>
 
-          {loading ? (
-            <div className='flex flex-col justify-center items-center'>
-              <TailSpin
-                className='flex justify-center items-center pt-12'
-                color='#d3d3d3'
-                height={40}
-                width={40}
-              />
+          {!currentAccount ? (
+            <div className='flex flex-col justify-center items-center mb-20 font-bold text-2xl gap-y-3'>
+              <div>----------------------------------------</div>
+              <div>Please connect wallet</div>
+              <div>----------------------------------------</div>
             </div>
           ) : (
-            <div className="mt-6 grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-              {orders.map((order, orderIndex) => (
-                <div key={orderIndex} className="group relative">
-                  <div className="w-full min-h-80 bg-gray-200 aspect-w-1 aspect-h-1 rounded-md overflow-hidden group-hover:opacity-75 lg:h-80 lg:aspect-none">
-                    <img
-                      src={order.attributes.metadata.image}
-                      alt={order.attributes.metadata.description}
-                      // loader={imageLoader}
-                      // unoptimized={true}
-                      // layout="raw"
-                      className="w-full h-full object-center object-cover lg:w-full lg:h-full"
-                    />
-                  </div>
-                  <div className="mt-4 flex justify-between">
-                    <div>
-                      <h3 className="text-sm text-gray-700">
-                        <a href="#" onClick={(e) => {
-                          e.preventDefault();
-                          setSelectedOrder(order);
-                          setModalOpen(true);
-                        }}>
-                          <span aria-hidden="true" className="absolute inset-0" />
-                          {order.attributes.metadata.name}
-                        </a>
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">#{order.attributes.metadata.tokenId}</p>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">{order.attributes.price} {order.attributes.currency}</p>
-                  </div>
+            <>
+              <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">Explore</h2>
+
+              {loading ? (
+                <div className='flex flex-col justify-center items-center'>
+                  <TailSpin
+                    className='flex justify-center items-center pt-12'
+                    color='#d3d3d3'
+                    height={40}
+                    width={40}
+                  />
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="mt-6 grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+                  {orders.map((order, orderIndex) => (
+                    <div key={orderIndex} className="group relative">
+                      <div className="w-full min-h-80 bg-gray-200 aspect-w-1 aspect-h-1 rounded-md overflow-hidden group-hover:opacity-75 lg:h-80 lg:aspect-none">
+                        <img
+                          src={order.attributes.metadata.image}
+                          alt={order.attributes.metadata.description}
+                          // loader={imageLoader}
+                          // unoptimized={true}
+                          // layout="raw"
+                          className="w-full h-full object-center object-cover lg:w-full lg:h-full"
+                        />
+                      </div>
+                      <div className="mt-4 flex justify-between">
+                        <div>
+                          <h3 className="text-sm text-gray-700">
+                            <a href="#" onClick={(e) => {
+                              e.preventDefault();
+                              setSelectedOrder(order);
+                              setModalOpen(true);
+                            }}>
+                              <span aria-hidden="true" className="absolute inset-0" />
+                              {order.attributes.metadata.name}
+                            </a>
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">#{order.attributes.metadata.tokenId}</p>
+                        </div>
+                        <p className="text-sm font-medium text-gray-900">{order.attributes.price} {order.attributes.currency}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
+
         </div>
 
         {modalOpen && (

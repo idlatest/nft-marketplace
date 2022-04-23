@@ -9,7 +9,7 @@ import { useAppContext } from '../context/AppContext'
 const navigation = [
   { name: 'Mint NFT', href: '/', current: true },
   { name: 'Explore', href: '/explore', current: false },
-  { name: 'Collections', href: '/collections', current: false },
+  { name: 'Collected', href: '/collected', current: false },
 ]
 
 function classNames(...classes) {
