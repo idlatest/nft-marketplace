@@ -1,6 +1,6 @@
 import { useEffect, useState, Fragment } from 'react';
 import Head from 'next/head';
-import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router'
 import { TailSpin } from 'react-loader-spinner';
 import { Dialog, Transition } from '@headlessui/react';
 import { XIcon } from '@heroicons/react/outline';
@@ -36,15 +36,18 @@ Moralis.start({
 export default function Collections() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingOrderPurchasing, setLoadingOrderPurchasing] = useState(false);
   const [txError, setTxError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const router = useRouter()
 
   const {
     currentAccount,
     getProvider,
     balance,
-    connectWallet
+    connectWallet,
+    getTokenBalance
   } = useAppContext();
 
   const web3 = getProvider();
@@ -65,9 +68,16 @@ export default function Collections() {
     const nft = getContract(nftContractAddress, nftContractABI);
     const token = getContract(tokenAddress, tokenABI);
 
+    const decimals = await token.methods.decimals().call();
+
     const gasLimit = 285000;
+    const formattedPrice = new BigNumber(selectedOrder.attributes.price).times(new BigNumber(10).pow(decimals));
+
+    console.log("price", formattedPrice);
 
     try {
+      setLoadingOrderPurchasing(true);
+
       if (!currentAccount) {
         await connectWallet()
       }
@@ -96,7 +106,7 @@ export default function Collections() {
       console.log("proxy", proxy);
 
       // set approval on nft contract to allow the proxy to make transaction on behalf of the owner
-      await token.methods.approve(proxy, selectedOrder.attributes.price).send({
+      await token.methods.approve(proxy, formattedPrice).send({
         from: currentAccount,
         gasLimit
       });
@@ -176,7 +186,7 @@ export default function Collections() {
         const firstData = nft.methods.transferFrom(order.maker, counterOrder.maker, selectedOrder.attributes.metadata.tokenId).encodeABI();
         console.log("firstData", firstData);
 
-        const secondData = token.methods.transferFrom(counterOrder.maker, order.maker, selectedOrder.attributes.price).encodeABI();
+        const secondData = token.methods.transferFrom(counterOrder.maker, order.maker, formattedPrice).encodeABI();
         console.log("secondData", secondData);
 
         const firstCall = { target: nftContractAddress, howToCall: 0, data: firstData };
@@ -185,7 +195,7 @@ export default function Collections() {
         const secondCall = { target: tokenAddress, howToCall: 0, data: secondData };
         console.log("secondCall", secondCall);
 
-        const res = await exchange.methods.atomicMatch_(
+        await exchange.methods.atomicMatch_(
           [
             order.registry,
             order.maker,
@@ -230,18 +240,22 @@ export default function Collections() {
         selectedOrder.set("cancelledOrFinalized", true);
 
         await selectedOrder.save();
+        await getTokenBalance();
 
         setOrders(
           orders.filter(orderState => orderState.id != selectedOrder.id)
         )
 
+        setLoadingOrderPurchasing(false);
+        setModalOpen(false);
+
         iziToast.success({ message: "Item bought successfully" })
+        router.push('/collected');
       })
     } catch (error) {
       console.log("error", error);
+      setLoadingOrderPurchasing(false);
       return iziToast.error({ message: error.message })
-    } finally {
-      setModalOpen(false);
     }
   }
 
@@ -407,9 +421,18 @@ export default function Collections() {
                             <form onSubmit={submit} className="mt-10">
                               <button
                                 type="submit"
-                                className="mt-6 w-full bg-indigo-600 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                disabled={loadingOrderPurchasing}
+                                className="mt-6 w-full bg-indigo-600 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-80"
                               >
-                                Buy NFT
+                                <span className='mr-4'>Buy NFT</span>
+
+                                {loadingOrderPurchasing && (
+                                  <TailSpin
+                                    color='#d3d3d3'
+                                    height={16}
+                                    width={16}
+                                  />
+                                )}
                               </button>
                             </form>
                           </section>

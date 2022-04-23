@@ -35,6 +35,7 @@ Moralis.start({
 export default function Collections() {
   const [NFTs, setAccountNFTs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingOrderListing, setLoadingOrderListing] = useState(false);
   const [txError, setTxError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNFT, setSelectedNFT] = useState(null);
@@ -75,6 +76,8 @@ export default function Collections() {
     const gasLimit = 285000;
 
     try {
+      setLoadingOrderListing(true);
+
       const proxyCheck = await registry.methods.proxies(currentAccount).call({
         from: currentAccount
       });
@@ -84,11 +87,9 @@ export default function Collections() {
         // allow proxy to carry out tx for user
         await registry.methods.registerProxy().send({
           from: currentAccount,
-          gasLimit: 285000
+          gasLimit
         });
       }
-
-
 
       const proxy = await registry.methods.proxies(currentAccount).call({
         from: currentAccount
@@ -184,13 +185,16 @@ export default function Collections() {
           cancelledOrFinalized: false,
         });
 
+        setLoadingOrderListing(false);
+
+        setModalOpen(false);
 
         iziToast.success({ message: "Listed successfully" });
       })
     } catch (error) {
       console.log("error", error);
-    } finally {
-      setModalOpen(false);
+      setLoadingOrderListing(false)
+      setTxError(error.message);
     }
   }
 
@@ -241,7 +245,7 @@ export default function Collections() {
       }
     }
     fetchNFTs();
-  }, [currentAccount, nftContractAddress]);
+  }, [currentAccount]);
 
   return (
     <div>
@@ -261,7 +265,7 @@ export default function Collections() {
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">Collections</h2>
+              <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">Collected Items</h2>
 
               {loading ? (
                 <div className='flex flex-col justify-center items-center'>
@@ -414,9 +418,18 @@ export default function Collections() {
                                 </div>
                                 <button
                                   type="submit"
-                                  className="mt-6 w-full bg-indigo-600 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                  disabled={loadingOrderListing}
+                                  className="mt-6 w-full bg-indigo-600 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-80"
                                 >
-                                  List NFT
+                                  <span className='mr-4'>List NFT</span>
+
+                                  {loadingOrderListing && (
+                                    <TailSpin
+                                      color='#d3d3d3'
+                                      height={16}
+                                      width={16}
+                                    />
+                                  )}
                                 </button>
                               </form>
                             </section>

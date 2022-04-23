@@ -110,6 +110,10 @@ export default function Home() {
                 Mint your Sway Bot NFT!
               </h2>
 
+              <button className='text-2xl font-bold py-3 px-12 bg-indigo-500 shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white' disabled={loading} onClick={mint}>
+                Mint NFT
+              </button>
+
               {loading ? (
                 <div className='flex flex-col justify-center items-center'>
                   <div className='text-lg font-bold'>

@@ -91,23 +91,22 @@ export function AppWrapper({ children }) {
     return contract
   }, [])
 
+  const getTokenBalance = useCallback(async () => {
+    const token = getContract(tokenAddress, tokenABI);
+
+    try {
+      const balance = await token.methods.balanceOf(currentAccount).call();
+      const decimals = await token.methods.decimals().call();
+
+      setBalance(new BigNumber(balance).div(new BigNumber(10).pow(decimals)).toFixed(2));
+    } catch (error) { }
+  }, [currentAccount, getContract])
+
   useEffect(() => {
     checkIfWalletIsConnected();
     checkCorrectNetwork();
-
-    const getTokenBalance = async () => {
-      const token = getContract(tokenAddress, tokenABI);
-
-      try {
-        const balance = await token.methods.balanceOf(currentAccount).call();
-        const decimals = await token.methods.decimals().call();
-
-        setBalance(new BigNumber(balance).div(10 ** decimals).toFixed(2));
-      } catch (error) { }
-    }
-
     getTokenBalance();
-  }, [currentAccount, getContract])
+  }, [getTokenBalance])
 
   return (
     <AppContext.Provider
@@ -117,7 +116,8 @@ export function AppWrapper({ children }) {
         correctNetwork,
         getProvider,
         balance,
-        getContract
+        getContract,
+        getTokenBalance
       }}
     >
       {children}
