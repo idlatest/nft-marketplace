@@ -47,26 +47,21 @@ export default function Collections() {
     getProvider,
     balance,
     connectWallet,
-    getTokenBalance
+    getTokenBalance,
+    getContract
   } = useAppContext();
 
   const web3 = getProvider();
 
   const aux = new Aux(web3);
 
-  const getContract = (contractAddress, contractABI) => {
-    const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-    return contract
-  }
+  const exchange = getContract(exchangeAddress, exchangeABI);
+  const registry = getContract(registryAddress, registryABI);
+  const nft = getContract(nftContractAddress, nftContractABI);
+  const token = getContract(tokenAddress, tokenABI);
 
   const submit = async (e) => {
     e.preventDefault()
-
-    const exchange = getContract(exchangeAddress, exchangeABI);
-    const registry = getContract(registryAddress, registryABI);
-    const nft = getContract(nftContractAddress, nftContractABI);
-    const token = getContract(tokenAddress, tokenABI);
 
     const decimals = await token.methods.decimals().call();
 

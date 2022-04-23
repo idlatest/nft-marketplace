@@ -52,6 +52,10 @@ export default function Collections() {
 
   const aux = new Aux(web3);
 
+  const exchange = getContract(exchangeAddress, exchangeABI);
+  const registry = getContract(registryAddress, registryABI);
+  const nft = getContract(nftContractAddress, nftContractABI);
+
   const parseURI = (URI) => {
     const parsedURI = URI.startsWith("ipfs://") ? `https://ipfs.io/ipfs/${URI.substring(7)}` : URI;
 
@@ -68,10 +72,6 @@ export default function Collections() {
 
   const submit = async (e) => {
     e.preventDefault()
-
-    const exchange = getContract(exchangeAddress, exchangeABI);
-    const registry = getContract(registryAddress, registryABI);
-    const nft = getContract(nftContractAddress, nftContractABI);
 
     const gasLimit = 285000;
 
@@ -226,7 +226,16 @@ export default function Collections() {
               NFTObj.externalURL = parsedMetadata.external_url;
               NFTObj.image = parseURI(parsedMetadata.image);
             } else {
-              const response = await axios.get(NFT.token_uri);
+              let response
+
+              if (NFT.token_uri) {
+                response = await axios.get(NFT.token_uri);
+              } else {
+                const tokenUri = await nft.methods.tokenURI(NFT.token_id).call();
+                const parsedTokenURI = parseURI(tokenUri)
+                response = await axios.get(parsedTokenURI);
+              }
+
               NFTObj.description = response.data.description;
               NFTObj.externalUR = response.data.external_url;
               NFTObj.image = parseURI(response.data.image)
