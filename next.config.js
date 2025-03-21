@@ -5,6 +5,7 @@ const nextConfig = {
     // domains: ['ipfs.io'],
     // formats: ['image/png'],
   },
-}
+  swcMinify: false,
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

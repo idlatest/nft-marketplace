@@ -1,32 +1,37 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import Web3 from 'web3';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import Web3 from "web3";
 import BigNumber from "bignumber.js";
-import { tokenABI, tokenAddress } from '../utils/constants';
+import { tokenABI, tokenAddress } from "../utils/constants";
 
 const AppContext = createContext();
 
-let ethereum
-if (typeof window !== 'undefined') {
+let ethereum;
+if (typeof window !== "undefined") {
   ethereum = window.ethereum;
 }
 
-
 export function AppWrapper({ children }) {
   const [currentAccount, setCurrentAccount] = useState("");
-  const [correctNetwork, setCorrectNetwork] = useState(false)
-  const [balance, setBalance] = useState(0)
+  const [correctNetwork, setCorrectNetwork] = useState(false);
+  const [balance, setBalance] = useState(0);
 
   const getProvider = () => {
     let web3 = new Web3(ethereum);
 
     return web3;
-  }
+  };
 
   const checkIfWalletIsConnected = async () => {
     if (!ethereum) return alert("Please install metamask");
 
     try {
-      const accounts = await ethereum.request({ method: 'eth_accounts' });
+      const accounts = await ethereum.request({ method: "eth_accounts" });
 
       if (accounts.length) {
         setCurrentAccount(accounts[0]);
@@ -36,19 +41,22 @@ export function AppWrapper({ children }) {
 
       throw new Error("No ethereum object!");
     }
-  }
+  };
 
   const connectWallet = async () => {
     if (!ethereum) return alert("Please install metamask");
 
     try {
-      const chainId = await ethereum.request({ method: 'eth_chainId' })
+      const chainId = await ethereum.request({ method: "eth_chainId" });
+      console.log("chainId: ", chainId);
 
-      if (chainId !== '0x4') {
-        return alert("Please switch to Rinkeby Testnet!")
-      }
+      // if (chainId !== '0x4') {
+      //   return alert("Please switch to Rinkeby Testnet!")
+      // }
 
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await ethereum.request({
+        method: "eth_requestAccounts",
+      });
 
       setCurrentAccount(accounts[0]);
 
@@ -64,15 +72,15 @@ export function AppWrapper({ children }) {
 
       throw new Error("No ethereum object!");
     }
-  }
+  };
 
   const checkCorrectNetwork = async () => {
     if (!ethereum) return alert("Please install metamask");
 
     try {
-      const chainId = await ethereum.request({ method: 'eth_chainId' })
+      const chainId = await ethereum.request({ method: "eth_chainId" });
 
-      if (chainId !== '0x4') {
+      if (chainId !== "0x4") {
         setCorrectNetwork(false);
       } else {
         setCorrectNetwork(true);
@@ -82,14 +90,14 @@ export function AppWrapper({ children }) {
 
       throw new Error("No ethereum object!");
     }
-  }
+  };
 
   const getContract = useCallback((contractAddress, contractABI) => {
     const web3 = getProvider();
     const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-    return contract
-  }, [])
+    return contract;
+  }, []);
 
   const getTokenBalance = useCallback(async () => {
     const token = getContract(tokenAddress, tokenABI);
@@ -98,15 +106,17 @@ export function AppWrapper({ children }) {
       const balance = await token.methods.balanceOf(currentAccount).call();
       const decimals = await token.methods.decimals().call();
 
-      setBalance(new BigNumber(balance).div(new BigNumber(10).pow(decimals)).toFixed(2));
-    } catch (error) { }
-  }, [currentAccount, getContract])
+      setBalance(
+        new BigNumber(balance).div(new BigNumber(10).pow(decimals)).toFixed(2),
+      );
+    } catch (error) {}
+  }, [currentAccount, getContract]);
 
   useEffect(() => {
     checkIfWalletIsConnected();
     checkCorrectNetwork();
     getTokenBalance();
-  }, [getTokenBalance])
+  }, [getTokenBalance]);
 
   return (
     <AppContext.Provider
@@ -117,7 +127,7 @@ export function AppWrapper({ children }) {
         getProvider,
         balance,
         getContract,
-        getTokenBalance
+        getTokenBalance,
       }}
     >
       {children}

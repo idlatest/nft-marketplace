@@ -1,24 +1,25 @@
-import { useEffect, useRef } from 'react';
-import Link from 'next/link'
-import { useRouter } from 'next/router';
-import { Disclosure } from '@headlessui/react'
-import { MenuIcon, XIcon, ExclamationCircleIcon } from '@heroicons/react/outline'
-import { renderIcon } from '@download/blockies';
-import { useAppContext } from '../context/AppContext'
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { Disclosure } from "@headlessui/react";
+import {
+  MenuIcon,
+  XIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/outline";
+import { renderIcon } from "@download/blockies";
+import { useAppContext } from "../context/AppContext";
 
-const navigation = [
-  { name: 'Mint NFT', href: '/', current: true },
-  { name: 'Explore', href: '/explore', current: false },
-  { name: 'Collected', href: '/collected', current: false },
-]
+const navigation = [{ name: "Home", href: "/", current: true }];
 
 function classNames(...classes) {
-  return classes.filter(Boolean).join(' ')
+  return classes.filter(Boolean).join(" ");
 }
 
 export default function Example() {
   const canvasRef = useRef(null);
-  const { currentAccount, connectWallet, correctNetwork, balance } = useAppContext();
+  const { currentAccount, connectWallet, correctNetwork, balance } =
+    useAppContext();
   const router = useRouter();
 
   const truncateAddress = (address) => {
@@ -27,19 +28,22 @@ export default function Example() {
     const match = address.match(truncateRegex);
     if (!match) return address;
     return `${match[1]}…${match[2]}`;
-  }
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
 
     if (canvas) {
-      renderIcon({
-        seed: currentAccount.toLowerCase(),
-        size: 6, // width/height of the icon in blocks, default: 10
-        scale: 3
-      }, canvas);
+      renderIcon(
+        {
+          seed: currentAccount.toLowerCase(),
+          size: 6, // width/height of the icon in blocks, default: 10
+          scale: 3,
+        },
+        canvas,
+      );
     }
-  }, [currentAccount])
+  }, [currentAccount]);
 
   return (
     <Disclosure as="nav" className="bg-gray-800">
@@ -73,16 +77,15 @@ export default function Example() {
                 <div className="hidden sm:block sm:ml-6">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                      >
+                      <Link key={item.name} href={item.href}>
                         <a
                           className={classNames(
-                            router.pathname === item.href ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                            'px-3 py-2 rounded-md text-sm font-medium'
+                            router.pathname === item.href
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                            "px-3 py-2 rounded-md text-sm font-medium",
                           )}
-                          aria-current={item.current ? 'page' : undefined}
+                          aria-current={item.current ? "page" : undefined}
                         >
                           {item.name}
                         </a>
@@ -95,10 +98,17 @@ export default function Example() {
                 {/* Profile dropdown */}
 
                 {!currentAccount ? (
-                  <button onClick={connectWallet} className="bg-indigo-500 px-3 py-1 rounded-full text-white font-semibold">Connect</button>
+                  <button
+                    onClick={connectWallet}
+                    className="bg-indigo-500 px-3 py-1 rounded-full text-white font-semibold"
+                  >
+                    Connect
+                  </button>
                 ) : (
                   <div className="flex items-center">
-                    <span className="font-medium mr-3 md:mr-6 text-sm text-white">{balance} SB</span>
+                    <span className="font-medium mr-3 md:mr-6 text-sm text-white">
+                      {balance} SB
+                    </span>
                     <span className="flex items-center text-white px-1 md:px-3 py-1 bg-gray-700 rounded-md">
                       <span className="hidden md:inline">
                         {truncateAddress(currentAccount)}
@@ -109,11 +119,17 @@ export default function Example() {
                 )}
               </div>
             </div>
-          </div >
+          </div>
 
           {!correctNetwork && (
             <div className="px-3 py-1 bg-orange-500 text-slate-800 text-center flex justify-center items-center">
-              <ExclamationCircleIcon className="block h-6 w-6 mr-2" aria-hidden="true" /> We are only supporting <span className="font-medium mx-1">Rinkeby</span> testnet!</div>
+              <ExclamationCircleIcon
+                className="block h-6 w-6 mr-2"
+                aria-hidden="true"
+              />{" "}
+              We are only supporting{" "}
+              <span className="font-medium mx-1">Rinkeby</span> testnet!
+            </div>
           )}
 
           <Disclosure.Panel className="sm:hidden">
@@ -124,10 +140,12 @@ export default function Example() {
                   as="a"
                   href={item.href}
                   className={classNames(
-                    item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block px-3 py-2 rounded-md text-base font-medium'
+                    item.current
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                    "block px-3 py-2 rounded-md text-base font-medium",
                   )}
-                  aria-current={item.current ? 'page' : undefined}
+                  aria-current={item.current ? "page" : undefined}
                 >
                   {item.name}
                 </Disclosure.Button>
@@ -135,8 +153,7 @@ export default function Example() {
             </div>
           </Disclosure.Panel>
         </>
-      )
-      }
-    </Disclosure >
-  )
+      )}
+    </Disclosure>
+  );
 }

